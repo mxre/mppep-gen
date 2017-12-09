@@ -16,12 +16,14 @@
 #ifndef STACKTRACE_H_
 #define STACKTRACE_H_
 
+#ifdef __linux__
 #include <stdio.h>
 #include <unistd.h>
 #include <execinfo.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#endif
 
 #ifdef __cplusplus
 #include <exception>
@@ -47,6 +49,7 @@ extern "C"
  */
 void register_handler (char** argv);
 
+#ifdef __linux__
 /**
  * \brief This function prints the stacktrace to stderr
  */
@@ -232,6 +235,12 @@ void register_handler (char** argv)
 	std::set_terminate(__trace);
 #endif // __cplusplus
 }
+
+#else // __linux__
+void register_handler (char** argv)
+{
+}
+#endif // __linux__
 
 #ifdef __cplusplus
 }  // extern "C"

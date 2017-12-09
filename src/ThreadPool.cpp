@@ -23,7 +23,9 @@
  *
  */
 
+#if __linux__
 #include <sys/prctl.h>
+#endif
 #include "ThreadPool.hpp"
 
 using namespace std;
@@ -66,7 +68,9 @@ ThreadPool::Worker::Worker (ThreadPool& s) :
 
 void ThreadPool::Worker::operator() ()
 {
+#if __linux__
 	prctl(PR_SET_NAME, "TPworker");
+#endif
 	while (true)
 	{
 		unique_lock<mutex> lock(pool.queue_mutex);

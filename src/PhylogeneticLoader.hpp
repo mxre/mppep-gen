@@ -91,7 +91,7 @@ private:
 	/// generate the Buneman-Graph
 	void generate ();
 	/// Check the Buneman condition for a given node, j is the bit that changed
-	bool isBuneman (const node_type&, const u_int j) const;
+	bool isBuneman (const node_type&, const unsigned int j) const;
 	/// insert a node into the Buneman data structure, for initialization
 	void insertBuneman (const node_type&);
 

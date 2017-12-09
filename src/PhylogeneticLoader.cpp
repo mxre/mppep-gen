@@ -34,12 +34,28 @@
 #include "ThreadPool.hpp"
 #include "stacktrace.h"
 
+#if __unix__
+#include <unistd.h>
+#elif _WIN32
+#include <windows.h>
+#endif
+
 #define OUTPUT_TIMEOUT std::chrono::milliseconds(250)
 #define OUTPUT_MULTIPLIER 4
 
 using namespace std;
 using namespace std::chrono;
 namespace fs = std::experimental::filesystem;
+
+static inline bool is_terminal()
+{
+#ifdef __unix__
+	return isatty(STDOUT_FILENO);
+#else
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	return (GetFileType(hOut) == FILE_TYPE_CHAR);
+#endif
+}
 
 int main (int argc, char* argv[])
 {
@@ -61,9 +77,9 @@ int main (int argc, char* argv[])
 
 	PhylogeneticLoader ldr;
 
-	string filename = basename(argv[1]);
-	cout << filename << ": ";
-	filename = fs::path(filename).stem();
+	fs::path path = fs::path(argv[1]);
+	cout << path.filename() << ": ";
+	string filename = path.stem().string();
 	cout << filename << endl;
 
 	ldr.parse(file);
@@ -260,7 +276,7 @@ void PhylogeneticLoader::generate ()
 			unique_lock<decltype(output.mx)> lock(output.mx);
 			output.monitor.wait_for(lock, OUTPUT_TIMEOUT);
 
-			if (isatty(STDOUT_FILENO))
+			if (is_terminal())
 			{
 				for (int i = 0; i < 55; i++) cout << "\b";
 			}
@@ -269,7 +285,7 @@ void PhylogeneticLoader::generate ()
 				cout << setw(10) << generated << ": queued " << setw(10) << p.queued() << "    V/s: " << setw(5) << (generated-last) * OUTPUT_MULTIPLIER;
 			}
 			last = generated;
-			if (isatty(STDOUT_FILENO)) cout << flush;
+			if (is_terminal()) cout << flush;
 			else cout << endl;
 
 			if (output.condition) break;
@@ -279,7 +295,7 @@ void PhylogeneticLoader::generate ()
 	const function<void (node_type)> expand = [this, &locks, &queue, &generated, &p] (const node_type &v)
 	{
 		if (v.get() == nullptr) return;
-		for (u_int j = 0; j < m; j++)
+		for (unsigned int j = 0; j < m; j++)
 		{
 			node_type v1(new Taxon(*v.get()));
 			//cout << *v << endl;
@@ -377,7 +393,7 @@ void PhylogeneticLoader::connect ()
 			output_monitor.wait_for(lock, OUTPUT_TIMEOUT);
 			{
 				shared_lock<decltype(edges_lock)> lock_e(edges_lock);
-				if (isatty(STDOUT_FILENO))
+				if (is_terminal())
 				{
 					for (int i = 0; i < 55; i++) cout << "\b";
 				}
@@ -388,7 +404,7 @@ void PhylogeneticLoader::connect ()
 		cout << "  E/s: " << setw(5) << (e-last_e) * OUTPUT_MULTIPLIER << "  V/s: " << setw(5) << (counter-last_v) * OUTPUT_MULTIPLIER;
 		last_e = e;
 		last_v = counter;
-		if (isatty(STDOUT_FILENO)) cout << flush;
+		if (is_terminal()) cout << flush;
 		else cout << endl;
 
 		if (end) break;
@@ -446,7 +462,7 @@ void PhylogeneticLoader::insertBuneman (const node_type& v)
 		}
 }
 
-bool PhylogeneticLoader::isBuneman (const node_type& v, const u_int j) const
+bool PhylogeneticLoader::isBuneman (const node_type& v, const unsigned int j) const
 {
   auto& p = (v->at(j) ? partitions1[j] : partitions0[j]);
 
