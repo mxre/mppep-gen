@@ -44,17 +44,27 @@
 #define OUTPUT_MULTIPLIER 4
 
 using namespace std;
-using namespace std::chrono;
 namespace fs = std::experimental::filesystem;
+
+static int __terminal = -1;
 
 static inline bool is_terminal()
 {
-#ifdef __unix__
-	return isatty(STDOUT_FILENO);
-#else
+	if (__terminal < 0) {
+#if __unix__
+	if (isatty(STDOUT_FILENO))
+		__terminal = 1;
+	else
+		__terminal = 0;
+#elif _WIN32
 	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	return (GetFileType(hOut) == FILE_TYPE_CHAR);
+	if (GetFileType(hOut) == FILE_TYPE_CHAR)
+		__terminal = 1;
+	else
+		__terminal = 0;
 #endif
+	}
+	return (bool) __terminal;
 }
 
 int main (int argc, char* argv[])
@@ -510,7 +520,7 @@ void PhylogeneticLoader::write (ostream& os, const string& name)
 	os << "Name    \"" << name << "\"" << endl;
 	os << "Creator \"Max Resch\"" << endl;
 	os << "Program \"" << PROGRAM_NAME << " " << PROGRAM_VERSION << "\"" << endl;
-	os << "Problem \"Classical Steiner tree problem in graph\"" << endl;
+	os << "Problem \"Classical Steiner tree problem in graphs\"" << endl;
 	os << "Remarks \"Converted from Maxmimum Parsimony Phylogeny Estimation Problem\"" << endl;
 	os << "END\n" << endl;
 
@@ -529,10 +539,9 @@ void PhylogeneticLoader::write (ostream& os, const string& name)
 	os << "END\n" << endl;
 
 	os << "SECTION Presolve" << endl;
-	nanoseconds wall(timer.elapsed().wall);
 	time_t t = time(nullptr);
 	os << "Date " << ctime(&t);
-	os << "Time " << duration_cast<duration<double, std::ratio<1>>>(wall).count() << endl;
+	os << "Time " << timer.elapsed().getSeconds() << endl;
 	os << "END\n" << endl;
 	os << "\nEOF" << endl;
 }
@@ -586,11 +595,11 @@ void PhylogeneticLoader::read (istream& is)
 
 void PhylogeneticLoader::write_timer ()
 {
-	nanoseconds wall(timer.elapsed().wall);
-	nanoseconds user(timer.elapsed().user);
-	double speedup(timer.elapsed().wall / timer.elapsed().user);
-	cout << "Wall Time: " << setprecision(3) << setw(5) << duration_cast<duration<double, std::ratio<1>>>(wall).count() << "s";
-	cout << "       CPU Time: " << setprecision(3) << setw(5) << duration_cast<duration<double, std::ratio<1>>>(user).count() << "s";
+	double wall = chrono::duration_cast<seconds>(timer.elapsed().wall).count();
+	double user = chrono::duration_cast<seconds>(timer.elapsed().user).count();
+	double speedup = user / wall;
+	cout << "Wall Time: " << setprecision(3) << setw(5) << wall << "s";
+	cout << "       CPU Time: " << setprecision(3) << setw(5) << user << "s";
 	cout << "       Speed up: " << setprecision(3) << setw(5) << speedup << endl;
 }
 

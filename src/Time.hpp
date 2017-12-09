@@ -20,7 +20,7 @@ struct CPUTime
 
 	CPUTime ();
 	CPUTime (const double);
-    CPUTime (const double _user, const double _sys, const double _wall);
+	CPUTime (const double _user, const double _sys, const double _wall);
 
 	_time wall;
 	_time user;

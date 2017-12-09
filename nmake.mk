@@ -3,28 +3,26 @@
 
 BUILD_DIR = build
 
-OBJS = \
-	$(BUILD_DIR)/PhylogeneticLoader.obj \
-	$(BUILD_DIR)/Taxon.obj \
-	$(BUILD_DIR)/ThreadPool.obj \
-	$(BUILD_DIR)/Timer.obj \
+OBJS =\
+	$(BUILD_DIR)/PhylogeneticLoader.obj\
+	$(BUILD_DIR)/Taxon.obj\
+	$(BUILD_DIR)/ThreadPool.obj\
+	$(BUILD_DIR)/Timer.obj\
 	$(BUILD_DIR)/Time.obj
 
-PROGRAM=phylogeny.exe
+PROGRAM  = phylogeny.exe
 
 INCLUDES = -Isrc/
-CXX = clang
-CXXFLAGS = -O3 -fexceptions -D_CONSOLE -D_MT -D_DLL -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS -D_WIN32_WINNT=0x0601
-LDFLAGS= -nologo -subsystem:console
-LIBS = msvcrt.lib vcruntime.lib ucrt.lib msvcprt.lib kernel32.lib
+CXX      = clang
+DEFINES  = -D_MT -D_DLL -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS -D_WIN32_WINNT=0x0601
 
 all: $(BUILD_DIR)/$(PROGRAM)
 
 {src}.cpp{$(BUILD_DIR)}.obj:
-	$(CXX) $(INCLUDES) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(INCLUDES) -fexceptions $(DEFINES) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/$(PROGRAM): $(OBJS)
-	link $(LDFLAGS) $(OBJS) $(LIBS) -out:$@
+	link -nologo -subsystem:console $(LDFLAGS) $(OBJS) -out:$@
 
 clean:
 	-del $(BUILD_DIR)\*.obj $(BUILD_DIR)\$(PROGRAM)
