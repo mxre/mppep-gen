@@ -112,7 +112,13 @@ int main (int argc, char* argv[])
 		ldr.write_timer();
 	} catch (exception& e) {
 		printf("Caught exception: %s\n", e.what());
+#if defined(_DEBUG) || !defined(NDEBUG)
+		// rethrow exception an crash application in debug mode
 		throw e;
+#else
+		// cleaner exit for release
+		return 1;
+#endif
 	}
 
 	return 0;
@@ -453,12 +459,10 @@ void PhylogeneticLoader::connect ()
 		{
 			unique_lock<decltype(output)> lock(output);
 			output_monitor.wait_for(lock, OUTPUT_TIMEOUT);
+			if (is_terminal())
+				goto_beginning_of_line();
 			{
 				shared_lock<decltype(edges_lock)> lock_e(edges_lock);
-				if (is_terminal())
-				{
-					goto_beginning_of_line();
-				}
 				e = edges.size();
 			}
 			//cout << setw(10) << e << ": " << setw(6) << counter << " / " << setw(6) << index - 1;
@@ -594,7 +598,7 @@ void PhylogeneticLoader::write (FILE* __restrict fp, const string& name)
 	fprintf(fp, "Name    \"%s\"\n", name.c_str());
 	fprintf(fp, "Creator \"%s\"\n", AUTHOR);
 	fprintf(fp, "Program \"" PROGRAM_NAME " " PROGRAM_VERSION "\"\n");
-	fprintf(fp, "Problem \"Classical Steiner tree problem in graphs\"\n");
+	//fprintf(fp, "Problem \"Classical Steiner tree problem in graphs\"\n");
 	fprintf(fp, "Remarks \"Converted from Maxmimum Parsimony Phylogeny Estimation Problem\"\n");
 	fprintf(fp, "END\n\n");
 
