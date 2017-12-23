@@ -33,7 +33,7 @@ public:
 
 	/// Parse Function
 	void parse (std::istream&);
-	void write (std::string);
+	void write (const std::string&);
 
 	/// Output timer statistics
 	void write_timer();

@@ -52,16 +52,27 @@ static inline bool is_terminal()
 {
 	if (__terminal < 0) {
 #if __unix__
-	if (isatty(STDOUT_FILENO))
-		__terminal = 1;
-	else
-		__terminal = 0;
+		if (isatty(STDOUT_FILENO))
+			__terminal = 1;
+		else
+			__terminal = 0;
 #elif _WIN32
-	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	if (GetFileType(hOut) == FILE_TYPE_CHAR)
-		__terminal = 1;
-	else
-		__terminal = 0;
+		HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+		if (GetFileType(hOut) == FILE_TYPE_CHAR)
+			__terminal = 1;
+		else
+			__terminal = 0;
+#endif
+#if _WIN32
+		if (__terminal) {
+			DWORD mode = 0;
+			HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+			GetConsoleMode(hConsole, &mode);
+			if (!SetConsoleMode(hConsole, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+				__terminal = 0;
+			}
+			SetConsoleOutputCP(CP_UTF8);
+		}
 #endif
 	}
 	return (bool) __terminal;
@@ -275,7 +286,7 @@ void PhylogeneticLoader::generate ()
 	//queue.push_back(*nodes.begin());
 	//cout << **nodes.begin() << endl;
 
-	int pool_threads = m > 100 ? 0 : 1;
+	int pool_threads = 0; //m > 100 ? 0 : 1;
 	ThreadPool p(pool_threads);
 
 	thread output_thread([&output, &locks, &p, &generated] ()
@@ -288,11 +299,12 @@ void PhylogeneticLoader::generate ()
 
 			if (is_terminal())
 			{
-				for (int i = 0; i < 55; i++) cout << "\b";
+				cout << "\033[G\033[K" << flush;
 			}
 			{
 				shared_lock<decltype(locks.queue)> lock(locks.queue);
 				cout << setw(10) << generated << ": queued " << setw(10) << p.queued() << "    V/s: " << setw(5) << (generated-last) * OUTPUT_MULTIPLIER;
+				cout << flush;
 			}
 			last = generated;
 			if (is_terminal()) cout << flush;
@@ -405,7 +417,7 @@ void PhylogeneticLoader::connect ()
 				shared_lock<decltype(edges_lock)> lock_e(edges_lock);
 				if (is_terminal())
 				{
-					for (int i = 0; i < 55; i++) cout << "\b";
+					cout << "\033[G\033[K" << flush;
 				}
 				e = edges.size();
 			}
@@ -488,7 +500,7 @@ bool PhylogeneticLoader::isBuneman (const node_type& v, const unsigned int j) co
 	return true;
 }
 
-void PhylogeneticLoader::write (string name)
+void PhylogeneticLoader::write (const string& name)
 {
 	stringstream stp_name;
 	stringstream map_name;
@@ -543,7 +555,7 @@ void PhylogeneticLoader::write (ostream& os, const string& name)
 	os << "Date " << ctime(&t);
 	os << "Time " << timer.elapsed().getSeconds() << endl;
 	os << "END\n" << endl;
-	os << "\nEOF" << endl;
+	os << "EOF" << endl;
 }
 
 void PhylogeneticLoader::read (istream& is)
