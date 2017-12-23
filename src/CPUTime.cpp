@@ -60,9 +60,3 @@ double CPUTime::getSeconds () const
 	//user + sys
 	return std::chrono::duration_cast<seconds>(wall).count();
 }
-
-std::ostream& operator<< (std::ostream& os, const CPUTime t)
-{
-	os << t.getSeconds();
-	return os;
-}

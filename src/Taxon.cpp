@@ -29,7 +29,7 @@ void Taxon::remove(const size_t pos)
 
 void Taxon::resize()
 {
-  internal = (bool*) realloc(internal, size);
+  internal = (__internal_t*) realloc(internal, size);
   //internal.resize(size);
 }
 
@@ -122,12 +122,10 @@ bool Taxon::at (size_t pos) const noexcept
 	return internal[pos];
 }
 
-ostream& operator<< (ostream& os, const Taxon& taxon)
+void Taxon::print (FILE* __restrict fp)
 {
-	for (size_t i = 0; i < taxon.length(); i++)
-		os << (taxon[i] ? '1' : '0');
-
-	return os;
+	for (size_t i = 0; i < size; i++)
+		fputc(internal[i] ? '1' : '0', fp);
 }
 
 Taxon::Taxon (const Taxon& other) :
@@ -135,7 +133,7 @@ Taxon::Taxon (const Taxon& other) :
 			Index(0),
 			size(other.size)
 {
-  internal = (bool*) malloc(size);
+  internal = (__internal_t*) malloc(size);
 
 	for (size_t i = 0; i < size; i++)
 	{
@@ -149,7 +147,7 @@ Taxon::Taxon (const size_t n) :
 			Index(0),
 			size(n)
 {
-	internal = (bool*) malloc(size);
+	internal = (__internal_t*) malloc(size);
 
 	for (size_t i = 0; i < size; i++)
 		internal[i] = false;

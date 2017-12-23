@@ -12,9 +12,6 @@
 #include <cstdio>
 #include <ctime>
 #include <cassert>
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <string>
 #include <algorithm>
 #include <stdexcept>
@@ -36,7 +33,6 @@
 
 #include "Taxon.hpp"
 #include "ThreadPool.hpp"
-#include "stacktrace.h"
 
 #if __unix__
 #include <unistd.h>
@@ -51,6 +47,7 @@ using namespace std;
 namespace fs = std::experimental::filesystem;
 
 static int __terminal = -1;
+static HANDLE hConsole;
 
 static inline bool is_terminal()
 {
@@ -61,20 +58,15 @@ static inline bool is_terminal()
 		else
 			__terminal = 0;
 #elif _WIN32
-		HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-		if (GetFileType(hOut) == FILE_TYPE_CHAR)
+		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		if (GetFileType(hConsole) == FILE_TYPE_CHAR)
 			__terminal = 1;
 		else
 			__terminal = 0;
 #endif
 #if _WIN32
-		if (__terminal) {
-			DWORD mode = 0;
-			HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-			GetConsoleMode(hConsole, &mode);
-			if (!SetConsoleMode(hConsole, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-				__terminal = 0;
-			}
+		if (__terminal)
+		{
 			SetConsoleOutputCP(CP_UTF8);
 		}
 #endif
@@ -82,10 +74,21 @@ static inline bool is_terminal()
 	return (bool) __terminal;
 }
 
+static inline void goto_beginning_of_line()
+{
+#if __unix__
+	printf("\033[G");
+#elif _WIN32
+	CONSOLE_SCREEN_BUFFER_INFO pBufferInfo;
+	GetConsoleScreenBufferInfo(hConsole, &pBufferInfo);
+	COORD pos = pBufferInfo.dwCursorPosition;
+	pos.X = 0;
+	SetConsoleCursorPosition(hConsole, pos);
+#endif
+}
+
 int main (int argc, char* argv[])
 {
-	register_handler(argv);
-
 	if (argc != 2)
 	{
 		printf("Need filename to process.\n");
@@ -331,7 +334,7 @@ void PhylogeneticLoader::generate ()
 
 			if (is_terminal())
 			{
-				printf("\033[G"); // goto beginning of line
+				goto_beginning_of_line();
 			}
 			{
 				shared_lock<decltype(locks.queue)> lock(locks.queue);
@@ -360,7 +363,8 @@ void PhylogeneticLoader::generate ()
 			{
 				shared_lock<decltype(locks.node_set)> lock(locks.node_set);
 				//cout << nodes.count(v1) << endl;
-				if (nodes.count(v1) > 0) continue;
+				if (nodes.count(v1) > 0)
+					continue;
 			}
 			shared_lock<decltype(locks.buneman)> lock(locks.buneman);
 			bool b = isBuneman(v1, j);
@@ -452,14 +456,17 @@ void PhylogeneticLoader::connect ()
 				shared_lock<decltype(edges_lock)> lock_e(edges_lock);
 				if (is_terminal())
 				{
-					printf("\033[G");
-					//fflush(stdout);
+					goto_beginning_of_line();
 				}
 				e = edges.size();
 			}
 			//cout << setw(10) << e << ": " << setw(6) << counter << " / " << setw(6) << index - 1;
-			printf("%10" PRIu64 ": %6.2lf%%", e, (counter / idx) * 100);
-			printf("  E/s: %5" PRIu64 "   V/s: %5" PRIu64, (e-last_e) * OUTPUT_MULTIPLIER, (counter-last_v) * OUTPUT_MULTIPLIER);
+			printf("%10" PRIu64 ": %6.2lf%%  E/s: %5" PRIu64 "   V/s: %5" PRIu64,
+				e,
+				(counter / idx) * 100,
+				(e-last_e) * OUTPUT_MULTIPLIER,
+				(counter-last_v) * OUTPUT_MULTIPLIER
+			);
 			last_e = e;
 			last_v = counter;
 			if (is_terminal())
@@ -541,39 +548,41 @@ bool PhylogeneticLoader::isBuneman (const node_type& v, const size_t j) const
 
 void PhylogeneticLoader::write (const string& name)
 {
-	stringstream stp_name;
-	stp_name << name << ".stp";
+	char filename[name.length() + 4];
+	sprintf(filename, "%s.stp", name.c_str());
 	
 	// open in untranslated mode so windows does not make \r\n in each line
-	FILE* stp = fopen(stp_name.str().c_str(), "wb");
+	FILE* stp = fopen(filename, "wb");
 	if (!stp)
 	{
-		printf("Could not open %s for writing.\n", stp_name.str().c_str());
+		printf("Could not open %s for writing.\n", filename);
 		throw runtime_error("Could not open output file.");
 	}
 	write(stp, name);
 	fclose(stp);
 
-	stringstream map_name;
-	map_name << name << ".map";
-	ofstream map(map_name.str(), ios_base::binary);
-	if (!map.good())
+	sprintf(filename, "%s.map", name.c_str());
+	FILE* map = fopen(filename, "wb");
+	if (!map)
 	{
-		printf("Could not open %s for writing.\n", stp_name.str().c_str());
+		printf("Could not open %s for writing.\n", filename);
 		throw runtime_error("Could not open output file.");
 	}
 	writemap(map);
-	map.close();
+	fclose(map);
 }
 
-void PhylogeneticLoader::writemap (ostream& os)
+void PhylogeneticLoader::writemap (FILE* __restrict fp)
 {
-	os << nodes.size() << endl;
-	os << m << endl;
-	os << k << endl;
+	fprintf(fp, "%zu\n", nodes.size());
+	fprintf(fp, "%" PRIu64 "\n", m);
+	fprintf(fp, "%" PRIu64 "\n", k);
 	for (auto v : nodes)
 	{
-		os << v->Index << "\t" << *v << (v->Terminal ? "\tterminal" : "") << endl;
+		fprintf(fp, "%" PRIu64 "\t", v->Index);
+		v->print(fp);
+		fprintf(fp, (v->Terminal ? "\tterminal" : ""));
+		fputc('\n', fp);
 	}
 }
 

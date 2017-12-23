@@ -12,8 +12,6 @@
 #include <cstdio>
 #include <deque>
 #include <vector>
-#include <istream>
-#include <ostream>
 #include <string>
 #include <memory>
 #include <utility>
@@ -93,7 +91,7 @@ private:
 	/// write output steiner tree in stp format
 	void write (FILE* __restrict, const std::string&);
 	/// write mapping information (to reconstruct original Phylogeny)
-	void writemap (std::ostream&);
+	void writemap (FILE* __restrict);
 
 	/// generate the Buneman-Graph
 	void generate ();

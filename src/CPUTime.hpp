@@ -10,7 +10,6 @@
 #define TIME_HPP_
 
 #include <chrono>
-#include <ostream>
 
 typedef std::chrono::duration<double, std::ratio<1>> seconds;
 
@@ -32,7 +31,5 @@ struct CPUTime
 
 	double getSeconds() const;
 };
-
-std::ostream& operator<< (std::ostream& os, const CPUTime t);
 
 #endif /* TIME_HPP_ */

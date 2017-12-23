@@ -12,7 +12,7 @@
 #include <string>
 #include <cstddef>
 #include <cstdint>
-#include <ostream>
+#include <cstdio>
 #include <memory>
 
 class Taxon
@@ -30,6 +30,8 @@ public:
 	bool at (std::size_t pos) const noexcept;
 
 	void flip(const std::size_t pos);
+
+	void print(FILE* __restrict);
 
 	bool operator== (const Taxon&) const noexcept;
 	bool operator< (const Taxon&) const noexcept;
@@ -50,10 +52,9 @@ public:
 	uint64_t Index;
 
 private:
-	bool* internal;
+	typedef bool __internal_t;
+	__internal_t* internal;
 	std::size_t size;
 };
-
-std::ostream& operator<< (std::ostream&, const Taxon&);
 
 #endif /* TAXON_HPP_ */
