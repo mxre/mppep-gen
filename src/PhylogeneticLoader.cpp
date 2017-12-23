@@ -96,19 +96,24 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 
-	string file(argv[1]);
-	PhylogeneticLoader ldr;
+	try {
+		string file(argv[1]);
+		PhylogeneticLoader ldr;
 
-	fs::path path = fs::path(argv[1]);
-	string filename = path.stem().string();
+		fs::path path = fs::path(argv[1]);
+		string filename = path.stem().string();
 
-	printf("%s: %s\n", path.filename().generic_u8string().c_str(), filename.c_str());
+		printf("%s: %s\n", path.filename().generic_u8string().c_str(), filename.c_str());
 
-	ldr.parse(file);
+		ldr.parse(file);
 
-	ldr.write(filename);
+		ldr.write(filename);
 
-	ldr.write_timer();
+		ldr.write_timer();
+	} catch (exception& e) {
+		printf("Caught exception: %s\n", e.what());
+		throw e;
+	}
 
 	return 0;
 }
