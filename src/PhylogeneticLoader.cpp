@@ -599,7 +599,7 @@ void PhylogeneticLoader::write (FILE* __restrict fp, const string& name)
 	fprintf(fp, "Creator \"%s\"\n", AUTHOR);
 	fprintf(fp, "Program \"" PROGRAM_NAME " " PROGRAM_VERSION "\"\n");
 	//fprintf(fp, "Problem \"Classical Steiner tree problem in graphs\"\n");
-	fprintf(fp, "Remarks \"Converted from Maxmimum Parsimony Phylogeny Estimation Problem\"\n");
+	fprintf(fp, "Remarks \"Converted from Maximum Parsimony Phylogeny Estimation Problem\"\n");
 	fprintf(fp, "END\n\n");
 
 	fprintf(fp, "SECTION Graph\n");
@@ -618,7 +618,7 @@ void PhylogeneticLoader::write (FILE* __restrict fp, const string& name)
 
 	fprintf(fp, "SECTION Presolve\n");
 	time_t t = time(nullptr);
-	fprintf(fp, "Date %s\n", ctime(&t));;
+	fprintf(fp, "Date %s", ctime(&t));;
 	fprintf(fp, "Time %lf\n", timer.elapsed().getSeconds());
 	fprintf(fp, "END\n\n");
 	fprintf(fp, "EOF\n");
