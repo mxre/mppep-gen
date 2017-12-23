@@ -8,25 +8,29 @@
 
 #include "PhylogeneticLoader.hpp"
 
+#include <cmath>
+#include <cstdio>
+#include <ctime>
+#include <cassert>
 #include <iostream>
-#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <algorithm>
 #include <stdexcept>
-#include <cmath>
 #include <tuple>
 #include <memory>
 #include <mutex>
 #include <atomic>
 #include <thread>
-#include <condition_variable>
+#include <limits>
 #include <chrono>
-#include <ctime>
-#include <experimental/filesystem>
-
+#include <condition_variable>
 #include <shared_mutex>
+
+#include <inttypes.h>
+
+#include <experimental/filesystem>
 
 #include "btree/btree_set.h"
 
@@ -99,9 +103,14 @@ int main (int argc, char* argv[])
 	PhylogeneticLoader ldr;
 
 	fs::path path = fs::path(argv[1]);
-	cout << path.filename() << ": ";
 	string filename = path.stem().string();
-	cout << filename << endl;
+
+#if _WIN32
+	// Windows uses wide strings
+	printf("%ls: %s\n", path.filename().c_str(), filename.c_str());
+#else
+	printf("%s: %s\n", path.filename().c_str(), filename.c_str());
+#endif
 
 	ldr.parse(file);
 	file.close();
@@ -121,8 +130,8 @@ void PhylogeneticLoader::parse (istream& is)
 	is >> m;
 	is >> k;
 
-	printf("Phylogeny with %d taxas, each %d haplotypes with %d-markers. ", n, m, k);
-	printf("Possible total: %lf.\n", pow((long) k, (long) m));
+	printf("Phylogeny with %" PRIu64 " taxas, each %" PRIu64 " haplotypes with %" PRIu64 "-markers. ", n, m, k);
+	printf("Possible total: %le\n", pow((double) k, (double) m));
 
 	if (k != 2)
 	{
@@ -135,7 +144,7 @@ void PhylogeneticLoader::parse (istream& is)
 
 	read(is);
 
-	printf("Found %u unique taxas. ", nodes.size());
+	printf("Found %zu unique taxas. ", nodes.size());
 	fflush(stdout);
 
 	weight.resize(m, 1);
@@ -144,8 +153,8 @@ void PhylogeneticLoader::parse (istream& is)
 	fflush(stdout);
 	preprocess();
 
-	printf("reduced to %d haplotypes. ", m);
-	printf("Possible total: %lf.\n", pow((long) k, (long) m));
+	printf("reduced to %" PRIu64 " haplotypes. ", m);
+	printf("Possible total: %le\n", pow((double) k, (double) m));
 
 	terminals = nodes.size();
 
@@ -157,19 +166,19 @@ void PhylogeneticLoader::parse (istream& is)
 
 	timer.stop();
 
-	printf("Total vertices %u, total edges %u\n", nodes.size(), edges.size());
+	printf("Total vertices %zu, total edges %zu\n", nodes.size(), edges.size());
 }
 
 void PhylogeneticLoader::preprocess ()
 {
-	vector<int> action(m, -1);
+	vector<int64_t> action(m, -1);
 
-	for (int i = 0; i < m; i++)
+	for (size_t i = 0; i < m; i++)
 	{
 		if (partitions0[i].none())
 		{
 #ifdef DEBUG
-			printf("delete column %d reason: all TRUE\n", i);
+			printf("delete column %zu reason: all TRUE\n", i);
 #endif
 			action[i] = -2;
 			continue;
@@ -178,20 +187,21 @@ void PhylogeneticLoader::preprocess ()
 		if (partitions1[i].none())
 		{
 #ifdef DEBUG
-			printf("delete column %d reason: all FALSE\n", i);
+			printf("delete column %zu reason: all FALSE\n", i);
 #endif
 			action[i] = -2;
 			continue;
 		}
 
 		if (action[i] == -1)
-			for (int j = i + 1; j < m; j++)
+			for (size_t j = i + 1; j < m; j++)
 			{
 				if ((partitions0[i] == partitions0[j]) || (partitions0[i] == partitions1[j]))
 				{
 #ifdef DEBUG
-					printf("delete column %d reason: equivalency w/ column %d\n", j, i);
+					printf("delete column %zu reason: equivalency w/ column %zu\n", j, i);
 #endif
+					assert(i < numeric_limits<int64_t>::max());
 					action[j] = i;
 				}
 			}
@@ -199,8 +209,8 @@ void PhylogeneticLoader::preprocess ()
 
 	auto it0 = partitions0.begin();
 	auto it1 = partitions1.begin();
-	int rem = 0;
-	for (int c = 0; c < m; c++)
+	size_t rem = 0;
+	for (size_t c = 0; c < m; c++)
 	{
 
 		if (action[c] == -2)
@@ -234,7 +244,7 @@ void PhylogeneticLoader::preprocess ()
 
 	// Erase the weight vector in a second pass to keep the action references
 	auto w = weight.begin();
-	for (int c = 0; c < m; c++)
+	for (size_t c = 0; c < m; c++)
 	{
 		if (action[c] == -2 || action[c] >= 0)
 		{
@@ -262,7 +272,7 @@ void PhylogeneticLoader::preprocess ()
 
 void PhylogeneticLoader::generate ()
 {
-	long generated = 0;
+	uint64_t generated = 0;
 	struct lock_t
 	{
 		shared_mutex buneman;
@@ -293,7 +303,7 @@ void PhylogeneticLoader::generate ()
 
 	thread output_thread([&output, &locks, &p, &generated] ()
 	{
-		long last = 0;
+		uint64_t last = 0;
 		while (true)
 		{
 			unique_lock<decltype(output.mx)> lock(output.mx);
@@ -301,12 +311,11 @@ void PhylogeneticLoader::generate ()
 
 			if (is_terminal())
 			{
-				printf("\033[G\033[K");
-				fflush(stdout);
+				printf("\033[G"); // goto beginning of line
 			}
 			{
 				shared_lock<decltype(locks.queue)> lock(locks.queue);
-				printf("%10d: queued: %10u    V/s: %5d", generated, p.queued(), (generated-last) * OUTPUT_MULTIPLIER);
+				printf("%10" PRIu64 ": queued: %10zu    V/s: %5" PRIu64, generated, p.queued(), (generated-last) * OUTPUT_MULTIPLIER);
 			}
 			last = generated;
 			if (is_terminal())
@@ -322,7 +331,7 @@ void PhylogeneticLoader::generate ()
 	const function<void (node_type)> expand = [this, &locks, &queue, &generated, &p] (const node_type &v)
 	{
 		if (v.get() == nullptr) return;
-		for (unsigned int j = 0; j < m; j++)
+		for (size_t j = 0; j < m; j++)
 		{
 			node_type v1(new Taxon(*v.get()));
 			//cout << *v << endl;
@@ -393,17 +402,17 @@ void PhylogeneticLoader::generate ()
 	output_thread.join();
 	printf("\n");
 
-	printf("Generated %d latent taxas. ", generated);
+	printf("Generated %" PRIu64 " latent taxas. ", generated);
 	fflush(stdout);
 }
 
 void PhylogeneticLoader::connect ()
 {
-	long index = 1;
+	uint64_t index = 1;
 	for (auto x : nodes)
 		x->Index = index++;
 	auto i = nodes.begin();
-	atomic<long> counter(0);
+	atomic<uint64_t> counter(0);
 	shared_mutex edges_lock;
 	mutex output;
 	condition_variable output_monitor;
@@ -411,9 +420,9 @@ void PhylogeneticLoader::connect ()
 
 	thread output_thread([this, &end, &counter, &output, &index, &edges_lock, &output_monitor] ()
 	{
-		long last_e = 0;
-		long last_v = 0;
-		long e;
+		uint64_t last_e = 0;
+		uint64_t last_v = 0;
+		uint64_t e;
 		double idx = index - 1;
 		while (true)
 		{
@@ -423,14 +432,14 @@ void PhylogeneticLoader::connect ()
 				shared_lock<decltype(edges_lock)> lock_e(edges_lock);
 				if (is_terminal())
 				{
-					printf("\033[G\033[K");
-					fflush(stdout);
+					printf("\033[G");
+					//fflush(stdout);
 				}
 				e = edges.size();
 			}
 			//cout << setw(10) << e << ": " << setw(6) << counter << " / " << setw(6) << index - 1;
-			printf("%10d: %6.2f%%", e, (counter / idx) * 100);
-			printf("  E/s: %5d  V/s: %5d", (e-last_e) * OUTPUT_MULTIPLIER, (counter-last_v) * OUTPUT_MULTIPLIER);
+			printf("%10" PRIu64 ": %6.2lf%%", e, (counter / idx) * 100);
+			printf("  E/s: %5" PRIu64 "   V/s: %5" PRIu64, (e-last_e) * OUTPUT_MULTIPLIER, (counter-last_v) * OUTPUT_MULTIPLIER);
 			last_e = e;
 			last_v = counter;
 			if (is_terminal())
@@ -454,7 +463,7 @@ void PhylogeneticLoader::connect ()
 			{
 				if ((**i).distance(**m) == 1)
 				{
-					int d = (**i).difference(**m);
+					size_t d = (**i).difference(**m);
 					{
 						unique_lock<decltype(edges_lock)> l(edges_lock);
 						edges.emplace_back(*i, *m, weight[d]);
@@ -481,7 +490,7 @@ void PhylogeneticLoader::connect ()
 
 void PhylogeneticLoader::insertBuneman (const node_type& v)
 {
-	for (int j = 0; j < m; j++)
+	for (size_t j = 0; j < m; j++)
 		if (v->at(j))
 		{
 			partitions1[j].push_back(true);
@@ -494,11 +503,11 @@ void PhylogeneticLoader::insertBuneman (const node_type& v)
 		}
 }
 
-bool PhylogeneticLoader::isBuneman (const node_type& v, const unsigned int j) const
+bool PhylogeneticLoader::isBuneman (const node_type& v, const size_t j) const
 {
   auto& p = (v->at(j) ? partitions1[j] : partitions0[j]);
 
-	for (int l = 0; l < m; l++)
+	for (size_t l = 0; l < m; l++)
 		if (l == j)
 			continue;
 		else if (!p.intersects(v->at(l) ? partitions1[l] : partitions0[l]))
@@ -516,8 +525,9 @@ void PhylogeneticLoader::write (const string& name)
 	stringstream map_name;
 	stp_name << name << ".stp";
 	map_name << name << ".map";
-	ofstream stp(stp_name.str());
-	ofstream map(map_name.str());
+	// open in untranslated mode so windows does not make \r\n in each line
+	ofstream stp(stp_name.str(), ios_base::binary);
+	ofstream map(map_name.str(), ios_base::binary);
 	write(stp, name);
 	writemap(map);
 	stp.close();
@@ -572,14 +582,14 @@ void PhylogeneticLoader::read (istream& is)
 {
 	string taxon;
 	// we already read the first 3 lines (n,m,k)
-	int line = 3;
-	for (int i = 0; i < n; i++)
+	uint64_t line = 3;
+	for (uint64_t i = 0; i < n; i++)
 	{
 		line++;
 
 		if (!is.good())
 		{
-			printf("Unexpected end of file, line: %d\n", line);
+			printf("Unexpected end of file, line: %" PRIu64 "\n", line);
 			return;
 		}
 
@@ -600,7 +610,7 @@ void PhylogeneticLoader::read (istream& is)
 		// exit if we encounter a faulty line
 		else if (taxon.length() != m)
 		{
-			printf("Unexpected length of taxon, length: %u, line: %d\n", taxon.length(), line);
+			printf("Unexpected length of taxon, length: %zu, line: %" PRIu64"\n", taxon.length(), line);
 			return;
 		}
 
@@ -622,7 +632,7 @@ void PhylogeneticLoader::write_timer ()
 	double speedup = user / wall;
 	printf("Wall Time: %5.3lfs", wall);
 	printf("       CPU Time: %5.3lfs", user);
-	printf("       Speed up: %5.3lf\n");
+	printf("       Speed up: %5.3lf\n", speedup);
 }
 
 PhylogeneticLoader::PhylogeneticLoader ()

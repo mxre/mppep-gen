@@ -9,9 +9,9 @@
 #include "Timer.hpp"
 #include <cassert>
 
-#if defined ( __unix__)
+#if  __unix__
 #include <sys/resource.h>
-#elif defined (_WIN32)
+#elif _WIN32
 #include <windows.h>
 #endif
 

@@ -6,7 +6,7 @@
  * \date 21.04.2013
  */
 
-#include "Time.hpp"
+#include "CPUTime.hpp"
 
 CPUTime::CPUTime () :
 			wall(),

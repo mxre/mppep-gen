@@ -28,7 +28,7 @@ endif(CMAKE_BUILD_TYPE MATCHES RELEASE)
 find_package(Boost)
 include_directories(${Boost_INCLUDE_DIR})
 
-set(phylogeny_sources src/PhylogeneticLoader.cpp src/Taxon.cpp src/ThreadPool.cpp src/Time.cpp src/Timer.cpp)
+set(phylogeny_sources src/PhylogeneticLoader.cpp src/Taxon.cpp src/ThreadPool.cpp src/CPUTime.cpp src/Timer.cpp)
 set(conv_sources src/ConvertFASTA.cpp)
 
 

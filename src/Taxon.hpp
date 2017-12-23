@@ -35,10 +35,10 @@ public:
 	Taxon& operator= (const Taxon& other) = default;
 
 	/// get hamming distance
-	const int distance (const Taxon& other) const;
+	const std::size_t distance (const Taxon& other) const;
 
 	/// get first occurance of diverging bit
-	const int difference (const Taxon& other) const;
+	const std::size_t difference (const Taxon& other) const;
 	const std::size_t length () const noexcept;
 	const std::size_t hash() const noexcept;
 	void remove(const std::size_t);

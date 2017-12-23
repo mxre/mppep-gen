@@ -47,25 +47,25 @@ const size_t Taxon::hash () const noexcept
 	return hash;
 }
 
-const int Taxon::difference (const Taxon& other) const
+const size_t Taxon::difference (const Taxon& other) const
 {
 	if (other.size != size)
 		throw logic_error("Taxas do not have the same length");
 
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 		if (internal[i] != other.internal[i])
 			return i;
 	return -1;
 }
 
-const int Taxon::distance (const Taxon& other) const
+const size_t Taxon::distance (const Taxon& other) const
 {
 	if (other.size != size)
 		throw logic_error("Taxas do not have the same length");
 
-	int distance = 0;
+	size_t distance = 0;
 
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 		if (internal[i] != other.internal[i])
 			distance++;
 	return distance;
@@ -77,7 +77,7 @@ bool Taxon::operator< (const Taxon& other) const noexcept
 	if (other.size != size)
 		return false;
 
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 		if (internal[i] != other.internal[i])
 			return internal[i];
 
@@ -93,7 +93,7 @@ bool Taxon::operator== (const Taxon& other) const noexcept
 {
 	if (other.size != size)
 		return false;
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
 		if (internal[i] != other.internal[i])
 			return false;
@@ -124,7 +124,7 @@ bool Taxon::at (size_t pos) const noexcept
 
 ostream& operator<< (ostream& os, const Taxon& taxon)
 {
-	for (int i = 0; i < taxon.length(); i++)
+	for (size_t i = 0; i < taxon.length(); i++)
 		os << (taxon[i] ? '1' : '0');
 
 	return os;
@@ -137,7 +137,7 @@ Taxon::Taxon (const Taxon& other) :
 {
   internal = (bool*) malloc(size);
 
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
 		internal[i] = other.internal[i];
 	}
@@ -151,14 +151,14 @@ Taxon::Taxon (const size_t n) :
 {
 	internal = (bool*) malloc(size);
 
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 		internal[i] = false;
 }
 
 Taxon::Taxon (const string& bitstring) :
 			Taxon(bitstring.length())
 {
-	for (int j = 0; j < size; j++)
+	for (size_t j = 0; j < size; j++)
 	{
 		if (bitstring[j] == '1')
 			internal[j] = true;

@@ -16,6 +16,9 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <cstddef>
+#include <cstdint>
+
 #include <boost/dynamic_bitset.hpp>
 
 #include "btree/btree_set.h"
@@ -31,8 +34,9 @@ public:
 	PhylogeneticLoader ();
 	virtual ~PhylogeneticLoader ();
 
-	/// Parse Function
+	/// Parse and generate Function
 	void parse (std::istream&);
+	/// Write output file
 	void write (const std::string&);
 
 	/// Output timer statistics
@@ -57,21 +61,21 @@ private:
 	/// Set of nodes
 	typedef btree::btree_set<node_type, less> node_set;
 	/// Data type for edges
-	typedef std::tuple<node_type, node_type, int> edge_type;
+	typedef std::tuple<node_type, node_type, uint64_t> edge_type;
 	/// List of generated edges
 	typedef std::deque<edge_type> edge_list;
 
 	/// Number of Taxas in input matrix
-	int n;
+	uint64_t n;
 	/// Length of each Taxon
-	int m;
+	uint64_t m;
 	/// Number of different values (has to be 2)
-	int k;
+	uint64_t k;
 
-	std::vector<int> weight;
+	std::vector<uint64_t> weight;
 
 	/// Taxon from the input
-	int terminals;
+	uint64_t terminals;
 
 	node_set nodes;
 	edge_list edges;
@@ -91,7 +95,7 @@ private:
 	/// generate the Buneman-Graph
 	void generate ();
 	/// Check the Buneman condition for a given node, j is the bit that changed
-	bool isBuneman (const node_type&, const unsigned int j) const;
+	bool isBuneman (const node_type&, const size_t j) const;
 	/// insert a node into the Buneman data structure, for initialization
 	void insertBuneman (const node_type&);
 

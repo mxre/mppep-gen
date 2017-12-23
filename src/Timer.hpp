@@ -8,7 +8,7 @@
 
 #ifndef TIMER_H_
 #define TIMER_H_
-#include "Time.hpp"
+#include "CPUTime.hpp"
 
 #include <mutex>
 #include <tuple>
