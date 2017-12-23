@@ -23,6 +23,7 @@
  *
  */
 
+#include "def.hpp"
 #if __linux__
 #include <sys/prctl.h>
 #endif

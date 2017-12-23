@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "filesystem": "cpp",
+        "cassert": "cpp",
+        "cstdio": "cpp",
+        "mutex": "cpp",
+        "ios": "cpp",
+        "xiosbase": "cpp",
+        "vector": "cpp"
+    }
+}

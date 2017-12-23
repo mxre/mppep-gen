@@ -1,29 +1,26 @@
-# Windows build with VC2017 build tools using Clang compiler 
-# Requires boost headers to be in a searchable path
 
 BUILD_DIR = build
 
-#OBJS =\
-#	$(BUILD_DIR)/PhylogeneticLoader.obj\
-#	$(BUILD_DIR)/Taxon.obj\
-#	$(BUILD_DIR)/ThreadPool.obj\
-#	$(BUILD_DIR)/Timer.obj\
-#	$(BUILD_DIR)/CPUTime.obj
-OBJS = $(BUILD_DIR)/unified.obj
+!IF [ MKDIR $(BUILD_DIR) 2> NUL ]
+!ENDIF
 
 PROGRAM  = phylogeny.exe
 
-#INCLUDES = -Isrc/
 CXX      = clang
-DEFINES  = -D_MT -D_DLL -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS -D_WIN32_WINNT=0x0601
+DEFINES  = -D_DLL
+DEPFLAGS = -MT $@ -MV -MMD -MP -MF $(BUILD_DIR)/dependencies.d
 
 all: $(BUILD_DIR)/$(PROGRAM)
 
 {src}.cpp{$(BUILD_DIR)}.obj:
-	$(CXX) $(INCLUDES) -Wall -fexceptions $(DEFINES) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(DEPFLAGS) $(INCLUDES) -Wall -fexceptions $(DEFINES) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/$(PROGRAM): $(OBJS)
-	link -nologo -subsystem:console $(LDFLAGS) $(OBJS) -out:$@
+$(BUILD_DIR)/$(PROGRAM): $(BUILD_DIR)/unified.obj
+	link -nologo -subsystem:console $(LDFLAGS) $(BUILD_DIR)/unified.obj -out:$@
 
 clean:
-	-del $(BUILD_DIR)\*.obj $(BUILD_DIR)\$(PROGRAM)
+	-del $(BUILD_DIR)\unified.obj $(BUILD_DIR)\$(PROGRAM)
+
+!IF EXIST($(BUILD_DIR)/dependencies.d)
+!INCLUDE $(BUILD_DIR)/dependencies.d
+!ENDIF

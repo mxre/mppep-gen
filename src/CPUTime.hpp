@@ -9,6 +9,7 @@
 #ifndef TIME_HPP_
 #define TIME_HPP_
 
+#include "def.hpp"
 #include <chrono>
 
 typedef std::chrono::duration<double, std::ratio<1>> seconds;

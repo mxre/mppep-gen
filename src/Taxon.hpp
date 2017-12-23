@@ -9,6 +9,7 @@
 #ifndef TAXON_HPP_
 #define TAXON_HPP_
 
+#include "def.hpp"
 #include <string>
 #include <cstddef>
 #include <cstdint>

@@ -6,13 +6,14 @@
  * \date 2012-12-21
  */
 
+#include "def.hpp"
 #include "Timer.hpp"
 #include <cassert>
 
 #if  __unix__
 #include <sys/resource.h>
 #elif _WIN32
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 using namespace std;
@@ -53,7 +54,7 @@ CPUTime Timer::getClocks()
 	double user = 0;
 	double wall = 0;
 
-#if defined(__unix__)
+#if __unix__
 	struct rusage usage;
 	int res = getrusage(RUSAGE_SELF, &usage);
 	if (res < 0) assert(false);
@@ -66,7 +67,7 @@ CPUTime Timer::getClocks()
 	timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	wall = ts.tv_sec + 1.0e-9*((double)ts.tv_nsec);
-#elif defined(_WIN32)
+#elif _WIN32
 	HANDLE hProcess = GetCurrentProcess();
 	FILETIME ftCreation, ftExit, ftKernel, ftUser;
 	GetProcessTimes(hProcess, &ftCreation, &ftExit, &ftKernel, &ftUser);

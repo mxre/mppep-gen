@@ -6,6 +6,7 @@
  * \date 21.04.2013
  */
 
+#include "def.hpp"
 #include "CPUTime.hpp"
 
 CPUTime::CPUTime () :

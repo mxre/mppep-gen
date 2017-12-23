@@ -9,6 +9,7 @@
 #ifndef PHYLOGENETICLOADER_HPP_
 #define PHYLOGENETICLOADER_HPP_
 
+#include "def.hpp"
 #include <cstdio>
 #include <deque>
 #include <vector>

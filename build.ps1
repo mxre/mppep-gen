@@ -29,11 +29,11 @@ $Env:LIB += ";$VC_PATH\Tools\MSVC\$VC_VERSION\lib\x64"
 
 if ($args.Length -gt 0 -and $args[0] -eq "debug") {
     $Env:CXXFLAGS = "-D_DEBUG -O0 -g3"
-    $Env:LDFLAGS = "-debug:full msvcrtd.lib ucrtd.lib vcruntimed.lib msvcprtd.lib kernel32.lib"
+    $Env:LDFLAGS = "-debug:full"
     nmake /f nmake.mk
 } else {
     $Env:CXXFLAGS = "-O3"
-    $Env:LDFLAGS = "msvcrt.lib ucrt.lib vcruntime.lib msvcprt.lib kernel32.lib"
+    $Env:LDFLAGS = ""
     nmake /f nmake.mk $args
 }
 

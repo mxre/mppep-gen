@@ -6,6 +6,7 @@
  * \date 10.07.2013
  */
 
+#include "def.hpp"
 #include "PhylogeneticLoader.hpp"
 
 #include <cmath>
@@ -37,7 +38,7 @@
 #if __unix__
 #include <unistd.h>
 #elif _WIN32
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 #define OUTPUT_TIMEOUT std::chrono::milliseconds(250)
@@ -47,7 +48,10 @@ using namespace std;
 namespace fs = std::experimental::filesystem;
 
 static int __terminal = -1;
-static HANDLE hConsole;
+
+#if _WIN32
+static HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+#endif
 
 static inline bool is_terminal()
 {
@@ -58,17 +62,10 @@ static inline bool is_terminal()
 		else
 			__terminal = 0;
 #elif _WIN32
-		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 		if (GetFileType(hConsole) == FILE_TYPE_CHAR)
 			__terminal = 1;
 		else
 			__terminal = 0;
-#endif
-#if _WIN32
-		if (__terminal)
-		{
-			SetConsoleOutputCP(CP_UTF8);
-		}
 #endif
 	}
 	return (bool) __terminal;
@@ -89,6 +86,10 @@ static inline void goto_beginning_of_line()
 
 int main (int argc, char* argv[])
 {
+#if _WIN32
+	SetConsoleOutputCP(CP_UTF8);
+#endif
+
 	if (argc != 2)
 	{
 		printf("Need filename to process.\n");
@@ -101,12 +102,7 @@ int main (int argc, char* argv[])
 	fs::path path = fs::path(argv[1]);
 	string filename = path.stem().string();
 
-#if _WIN32
-	// Windows uses wide strings
-	printf("%ls: %s\n", path.filename().c_str(), filename.c_str());
-#else
-	printf("%s: %s\n", path.filename().c_str(), filename.c_str());
-#endif
+	printf("%s: %s\n", path.filename().generic_u8string().c_str(), filename.c_str());
 
 	ldr.parse(file);
 
@@ -532,7 +528,7 @@ void PhylogeneticLoader::insertBuneman (const node_type& v)
 
 bool PhylogeneticLoader::isBuneman (const node_type& v, const size_t j) const
 {
-  auto& p = (v->at(j) ? partitions1[j] : partitions0[j]);
+	auto& p = (v->at(j) ? partitions1[j] : partitions0[j]);
 
 	for (size_t l = 0; l < m; l++)
 		if (l == j)

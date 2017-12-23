@@ -8,6 +8,8 @@
 
 #ifndef TIMER_H_
 #define TIMER_H_
+
+#include "def.hpp"
 #include "CPUTime.hpp"
 
 #include <mutex>

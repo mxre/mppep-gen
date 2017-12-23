@@ -6,6 +6,7 @@
  * \date 10.07.2013
  */
 
+#include "def.hpp"
 #include "Taxon.hpp"
 
 #include <stdexcept>
@@ -21,9 +22,13 @@ using namespace std;
 void Taxon::remove(const size_t pos)
 {
 	if (pos >= size)
+	{
 		throw logic_error("Position out of bounds");
+	}
 	if (pos < size - 1)
+	{
 		move(internal + pos + 1, internal + size , internal + pos);
+	}
 	size = size - 1;
 }
 
@@ -41,7 +46,7 @@ const size_t Taxon::length () const noexcept
 const size_t Taxon::hash () const noexcept
 {
 	size_t hash = 0;
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 		hash ^= (internal[i] << i);
 
 	return hash;
@@ -50,7 +55,9 @@ const size_t Taxon::hash () const noexcept
 const size_t Taxon::difference (const Taxon& other) const
 {
 	if (other.size != size)
+	{
 		throw logic_error("Taxas do not have the same length");
+	}
 
 	for (size_t i = 0; i < size; i++)
 		if (internal[i] != other.internal[i])
@@ -61,7 +68,9 @@ const size_t Taxon::difference (const Taxon& other) const
 const size_t Taxon::distance (const Taxon& other) const
 {
 	if (other.size != size)
+	{
 		throw logic_error("Taxas do not have the same length");
+	}
 
 	size_t distance = 0;
 
@@ -159,11 +168,17 @@ Taxon::Taxon (const char * __restrict bitstring, const size_t __len) :
 	for (size_t j = 0; j < size; j++)
 	{
 		if (bitstring[j] == '1')
+		{
 			internal[j] = true;
+		}
 		else if (bitstring[j] == '0')
+		{
 			internal[j] = false;
+		}
 		else
+		{
 			throw out_of_range("Taxon bitstring is neither 0 or 1");
+		}
 	}
 
 	Terminal = true;

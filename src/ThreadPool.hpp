@@ -26,6 +26,7 @@
 #ifndef THREAD_POOL_HPP_
 #define THREAD_POOL_HPP_
 
+#include "def.hpp"
 #include <vector>
 #include <queue>
 #include <memory>
@@ -78,7 +79,9 @@ std::future<T> ThreadPool::enqueue (const F f)
 {
 	// don't allow enqueueing after stopping the pool
 	if (stop)
+	{
 		throw std::runtime_error("enqueue on stopped ThreadPool");
+	}
 
 	auto task = std::make_shared<std::packaged_task<T ()> >(f);
 	std::future<T> res = task->get_future();

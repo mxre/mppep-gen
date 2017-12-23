@@ -1,0 +1,79 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "/usr/include",
+                "/usr/local/include",
+                "${workspaceRoot}"
+            ],
+            "defines": [],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "/usr/include",
+                    "/usr/local/include",
+                    "${workspaceRoot}"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ]
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "/usr/include",
+                "/usr/include/linux",
+                "/usr/include/c++/7.2.1",
+                "/usr/include/c++/7.2.1/x86_64-pc-linux-gnu",
+                "${workspaceRoot}/src"
+            ],
+            "defines": [],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "/usr/include/*",
+                    "/usr/include/linux/*",
+                    "/usr/include/c++/7.2.1/*",
+                    "/usr/include/c++/7.2.1/x86_64-pc-linux-gnu/*",
+                    "${workspaceRoot}/src/*"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        },
+        {
+            "name": "Win32",
+            "includePath": [
+                "/run/media/max/Volume/Windows/VS14/WK/include/ucrt",
+                "/run/media/max/Volume/Windows/VS14/WK/include/shared",
+                "/run/media/max/Volume/Windows/VS14/WK/include/um",
+                "/run/media/max/Volume/Windows/VS14/VC/include",
+                "${workspaceRoot}/src"
+            ],
+            "defines": [
+                "_DEBUG",
+                "_DLL",
+                "__unix__ 0",
+                "_WIN32 1"
+            ],
+            "intelliSenseMode": "msvc-x64",
+            "browse": {
+                "path": [
+                    "/run/media/max/Volume/Windows/VS14/WK/include/ucrt/*",
+                    "/run/media/max/Volume/Windows/VS14/WK/include/shared/*",
+                    "/run/media/max/Volume/Windows/VS14/WK/include/um/*",
+                    "/run/media/max/Volume/Windows/VS14/VC/include/*",
+                    "${workspaceRoot}/src"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        }
+    ],
+    "version": 3
+}
