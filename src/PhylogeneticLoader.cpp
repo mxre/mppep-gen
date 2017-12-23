@@ -84,7 +84,7 @@ int main (int argc, char* argv[])
 
 	if (argc != 2)
 	{
-		cout << "Need file to process" << endl;
+		printf("Need file to process.\n");
 		return 1;
 	}
 
@@ -92,7 +92,7 @@ int main (int argc, char* argv[])
 
 	if (!file.good())
 	{
-		cout << "Error opening file" << endl;
+		printf("Error opening file: %s\n", argv[1]);
 		return 2;
 	}
 
@@ -121,12 +121,12 @@ void PhylogeneticLoader::parse (istream& is)
 	is >> m;
 	is >> k;
 
-	cout << "Phylogeny with " << n << " taxas, each " << m << " haplotypes with ";
-	cout << k << "-markers. Possible total: " << pow((long) k, (long) m) << "." << endl;
+	printf("Phylogeny with %d taxas, each %d haplotypes with %d-markers. ", n, m, k);
+	printf("Possible total: %lf.\n", pow((long) k, (long) m));
 
 	if (k != 2)
 	{
-		cout << "Cannot Process non binary markers!" << endl;
+		printf("Cannot Process non binary markers!\n");
 		return;
 	}
 
@@ -135,27 +135,29 @@ void PhylogeneticLoader::parse (istream& is)
 
 	read(is);
 
-	cout << "Found " << nodes.size() << " unique taxas. " << flush;
+	printf("Found %u unique taxas. ", nodes.size());
+	fflush(stdout);
 
 	weight.resize(m, 1);
 
-	cout << "Prepocessing " << flush;
+	printf("Prepocessing ");
+	fflush(stdout);
 	preprocess();
 
-	cout << "reduced to " << m << " haplotypes. " << flush;
-	cout << "Possible total: " << pow((long) k, (long) m) << "." << endl;
+	printf("reduced to %d haplotypes. ", m);
+	printf("Possible total: %lf.\n", pow((long) k, (long) m));
 
 	terminals = nodes.size();
 
 	generate();
 
-	cout << "Connecting vertices..." << endl;
+	printf("Connecting vertices...\n");
 
 	connect();
 
 	timer.stop();
 
-	cout << "Total vertices " << nodes.size() << ", total edges " << edges.size() << endl;
+	printf("Total vertices %u, total edges %u\n", nodes.size(), edges.size());
 }
 
 void PhylogeneticLoader::preprocess ()
@@ -167,7 +169,7 @@ void PhylogeneticLoader::preprocess ()
 		if (partitions0[i].none())
 		{
 #ifdef DEBUG
-			cout << "delete column " << i << " reason: all TRUE" << endl;
+			printf("delete column %d reason: all TRUE\n", i);
 #endif
 			action[i] = -2;
 			continue;
@@ -176,7 +178,7 @@ void PhylogeneticLoader::preprocess ()
 		if (partitions1[i].none())
 		{
 #ifdef DEBUG
-			cout << "delete column " << i << " reason: all FALSE" << endl;
+			printf("delete column %d reason: all FALSE\n", i);
 #endif
 			action[i] = -2;
 			continue;
@@ -188,7 +190,7 @@ void PhylogeneticLoader::preprocess ()
 				if ((partitions0[i] == partitions0[j]) || (partitions0[i] == partitions1[j]))
 				{
 #ifdef DEBUG
-					cout << "delete column " << j << " reason: equivalency w/ column " << i << endl;
+					printf("delete column %d reason: equivalency w/ column %d\n", j, i);
 #endif
 					action[j] = i;
 				}
@@ -299,18 +301,21 @@ void PhylogeneticLoader::generate ()
 
 			if (is_terminal())
 			{
-				cout << "\033[G\033[K" << flush;
+				printf("\033[G\033[K");
+				fflush(stdout);
 			}
 			{
 				shared_lock<decltype(locks.queue)> lock(locks.queue);
-				cout << setw(10) << generated << ": queued " << setw(10) << p.queued() << "    V/s: " << setw(5) << (generated-last) * OUTPUT_MULTIPLIER;
-				cout << flush;
+				printf("%10d: queued: %10u    V/s: %5d", generated, p.queued(), (generated-last) * OUTPUT_MULTIPLIER);
 			}
 			last = generated;
-			if (is_terminal()) cout << flush;
-			else cout << endl;
+			if (is_terminal())
+				fflush(stdout);
+			else
+				printf("\n");
 
-			if (output.condition) break;
+			if (output.condition)
+				break;
 		}
 	});
 
@@ -386,9 +391,10 @@ void PhylogeneticLoader::generate ()
 		output.monitor.notify_one();
 	}
 	output_thread.join();
-	cout << endl;
+	printf("\n");
 
-	cout << "Generated " << generated << " latent taxas. " << flush;
+	printf("Generated %d latent taxas. ", generated);
+	fflush(stdout);
 }
 
 void PhylogeneticLoader::connect ()
@@ -417,20 +423,24 @@ void PhylogeneticLoader::connect ()
 				shared_lock<decltype(edges_lock)> lock_e(edges_lock);
 				if (is_terminal())
 				{
-					cout << "\033[G\033[K" << flush;
+					printf("\033[G\033[K");
+					fflush(stdout);
 				}
 				e = edges.size();
 			}
 			//cout << setw(10) << e << ": " << setw(6) << counter << " / " << setw(6) << index - 1;
-		cout << setw(10) << e << ": " << fixed << setw(6) << setprecision(2) << (counter / idx) * 100 << "%";
-		cout << "  E/s: " << setw(5) << (e-last_e) * OUTPUT_MULTIPLIER << "  V/s: " << setw(5) << (counter-last_v) * OUTPUT_MULTIPLIER;
-		last_e = e;
-		last_v = counter;
-		if (is_terminal()) cout << flush;
-		else cout << endl;
+			printf("%10d: %6.2f%%", e, (counter / idx) * 100);
+			printf("  E/s: %5d  V/s: %5d", (e-last_e) * OUTPUT_MULTIPLIER, (counter-last_v) * OUTPUT_MULTIPLIER);
+			last_e = e;
+			last_v = counter;
+			if (is_terminal())
+				fflush(stdout);
+			else
+				printf("\n");
 
-		if (end) break;
-	}
+			if (end)
+				break;
+		}
 });
 
 	ThreadPool p(0);
@@ -569,7 +579,7 @@ void PhylogeneticLoader::read (istream& is)
 
 		if (!is.good())
 		{
-			cout << "Unexpected end of file, line: " << line << endl;
+			printf("Unexpected end of file, line: %d\n", line);
 			return;
 		}
 
@@ -590,7 +600,7 @@ void PhylogeneticLoader::read (istream& is)
 		// exit if we encounter a faulty line
 		else if (taxon.length() != m)
 		{
-			cout << "Unexpected length of taxon, length: " << taxon.length() << ", line: " << line << endl;
+			printf("Unexpected length of taxon, length: %u, line: %d\n", taxon.length(), line);
 			return;
 		}
 
@@ -610,9 +620,9 @@ void PhylogeneticLoader::write_timer ()
 	double wall = chrono::duration_cast<seconds>(timer.elapsed().wall).count();
 	double user = chrono::duration_cast<seconds>(timer.elapsed().user).count();
 	double speedup = user / wall;
-	cout << "Wall Time: " << setprecision(3) << setw(5) << wall << "s";
-	cout << "       CPU Time: " << setprecision(3) << setw(5) << user << "s";
-	cout << "       Speed up: " << setprecision(3) << setw(5) << speedup << endl;
+	printf("Wall Time: %5.3lfs", wall);
+	printf("       CPU Time: %5.3lfs", user);
+	printf("       Speed up: %5.3lf\n");
 }
 
 PhylogeneticLoader::PhylogeneticLoader ()
