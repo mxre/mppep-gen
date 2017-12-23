@@ -88,18 +88,11 @@ int main (int argc, char* argv[])
 
 	if (argc != 2)
 	{
-		printf("Need file to process.\n");
+		printf("Need filename to process.\n");
 		return 1;
 	}
 
-	ifstream file(argv[1]);
-
-	if (!file.good())
-	{
-		printf("Error opening file: %s\n", argv[1]);
-		return 2;
-	}
-
+	string file(argv[1]);
 	PhylogeneticLoader ldr;
 
 	fs::path path = fs::path(argv[1]);
@@ -113,7 +106,6 @@ int main (int argc, char* argv[])
 #endif
 
 	ldr.parse(file);
-	file.close();
 
 	ldr.write(filename);
 
@@ -122,13 +114,35 @@ int main (int argc, char* argv[])
 	return 0;
 }
 
-void PhylogeneticLoader::parse (istream& is)
+void PhylogeneticLoader::parse (const string& file)
 {
 	timer.start();
 
-	is >> n;
-	is >> m;
-	is >> k;
+	FILE* fp = fopen(file.c_str() ,"r");
+	if (!fp)
+	{
+		printf("Could not open file: %s.\n", file.c_str());
+		throw runtime_error("Could not open input file.");
+	}
+
+	if (1 != fscanf(fp, "%" SCNu64, &n))
+	{
+		printf("Expected number of taxas, line: 1\n");
+		fclose(fp);
+		throw runtime_error("Format error in input file");
+	}
+	if (1 != fscanf(fp, "%" SCNu64, &m))
+	{
+		printf("Expected number of haplotypes, line: 2\n");
+		fclose(fp);
+		throw runtime_error("Format error in input file");
+	}
+	if (1 != fscanf(fp, "%" SCNu64, &k))
+	{
+		printf("Expected number of markers, line: 3\n");
+		fclose(fp);
+		throw runtime_error("Format error in input file");
+	}
 
 	printf("Phylogeny with %" PRIu64 " taxas, each %" PRIu64 " haplotypes with %" PRIu64 "-markers. ", n, m, k);
 	printf("Possible total: %le\n", pow((double) k, (double) m));
@@ -136,13 +150,20 @@ void PhylogeneticLoader::parse (istream& is)
 	if (k != 2)
 	{
 		printf("Cannot Process non binary markers!\n");
-		return;
+		fclose(fp);
+		throw runtime_error("Format error in input file");
 	}
 
 	partitions0.resize(m);
 	partitions1.resize(m);
 
-	read(is);
+	try {
+		read(fp);
+	} catch (exception& e) {
+		fclose(fp);
+		throw e;
+	}
+	fclose(fp);
 
 	printf("Found %zu unique taxas. ", nodes.size());
 	fflush(stdout);
@@ -238,7 +259,6 @@ void PhylogeneticLoader::preprocess ()
 		{
 			it0++;
 			it1++;
-
 		}
 	}
 
@@ -450,7 +470,7 @@ void PhylogeneticLoader::connect ()
 			if (end)
 				break;
 		}
-});
+	});
 
 	ThreadPool p(0);
 	while (i != nodes.end())
@@ -522,15 +542,27 @@ bool PhylogeneticLoader::isBuneman (const node_type& v, const size_t j) const
 void PhylogeneticLoader::write (const string& name)
 {
 	stringstream stp_name;
-	stringstream map_name;
 	stp_name << name << ".stp";
-	map_name << name << ".map";
+	
 	// open in untranslated mode so windows does not make \r\n in each line
-	ofstream stp(stp_name.str(), ios_base::binary);
-	ofstream map(map_name.str(), ios_base::binary);
+	FILE* stp = fopen(stp_name.str().c_str(), "wb");
+	if (!stp)
+	{
+		printf("Could not open %s for writing.\n", stp_name.str().c_str());
+		throw runtime_error("Could not open output file.");
+	}
 	write(stp, name);
+	fclose(stp);
+
+	stringstream map_name;
+	map_name << name << ".map";
+	ofstream map(map_name.str(), ios_base::binary);
+	if (!map.good())
+	{
+		printf("Could not open %s for writing.\n", stp_name.str().c_str());
+		throw runtime_error("Could not open output file.");
+	}
 	writemap(map);
-	stp.close();
 	map.close();
 }
 
@@ -545,58 +577,61 @@ void PhylogeneticLoader::writemap (ostream& os)
 	}
 }
 
-void PhylogeneticLoader::write (ostream& os, const string& name)
+void PhylogeneticLoader::write (FILE* __restrict fp, const string& name)
 {
-	os << "33D32945 STP File, STP Format Version 1.0\n" << endl;
-	os << "SECTION Comment" << endl;
-	os << "Name    \"" << name << "\"" << endl;
-	os << "Creator \"Max Resch\"" << endl;
-	os << "Program \"" << PROGRAM_NAME << " " << PROGRAM_VERSION << "\"" << endl;
-	os << "Problem \"Classical Steiner tree problem in graphs\"" << endl;
-	os << "Remarks \"Converted from Maxmimum Parsimony Phylogeny Estimation Problem\"" << endl;
-	os << "END\n" << endl;
+	fprintf(fp, "33D32945 STP File, STP Format Version 1.0\n\n");
+	fprintf(fp, "SECTION Comment\n");
+	fprintf(fp, "Name    \"%s\"\n", name.c_str());
+	fprintf(fp, "Creator \"%s\"\n", AUTHOR);
+	fprintf(fp, "Program \"" PROGRAM_NAME " " PROGRAM_VERSION "\"\n");
+	fprintf(fp, "Problem \"Classical Steiner tree problem in graphs\"\n");
+	fprintf(fp, "Remarks \"Converted from Maxmimum Parsimony Phylogeny Estimation Problem\"\n");
+	fprintf(fp, "END\n\n");
 
-	os << "SECTION Graph" << endl;
-	os << "Nodes " << nodes.size() << endl;
-	os << "Edges " << edges.size() << endl;
+	fprintf(fp, "SECTION Graph\n");
+	fprintf(fp, "Nodes %zu\n", nodes.size());
+	fprintf(fp, "Edges %zu\n", edges.size());
 	for (auto e : edges)
-		os << "E " << get<0>(e)->Index << " " << get<1>(e)->Index << " " << get<2>(e) << endl;
-	os << "END\n" << endl;
+		fprintf(fp, "E %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", get<0>(e)->Index, get<1>(e)->Index, get<2>(e));
+	fprintf(fp, "END\n\n");
 
-	os << "SECTION Terminals" << endl;
-	os << "Terminals " << terminals << endl;
+	fprintf(fp, "SECTION Terminals\n");
+	fprintf(fp, "Terminals %" PRIu64 "\n", terminals);
 	for (auto x : nodes)
 		if (x->Terminal)
-			os << "T " << x->Index << endl;
-	os << "END\n" << endl;
+			fprintf(fp, "T %" PRIu64 "\n", x->Index);
+	fprintf(fp, "END\n\n");
 
-	os << "SECTION Presolve" << endl;
+	fprintf(fp, "SECTION Presolve\n");
 	time_t t = time(nullptr);
-	os << "Date " << ctime(&t);
-	os << "Time " << timer.elapsed().getSeconds() << endl;
-	os << "END\n" << endl;
-	os << "EOF" << endl;
+	fprintf(fp, "Date %s\n", ctime(&t));;
+	fprintf(fp, "Time %lf\n", timer.elapsed().getSeconds());
+	fprintf(fp, "END\n\n");
+	fprintf(fp, "EOF\n");
 }
 
-void PhylogeneticLoader::read (istream& is)
+void PhylogeneticLoader::read (FILE* __restrict fp)
 {
-	string taxon;
+	// additonal space for '\n' and '\0'
+	char taxon[m + 4];
+	size_t len;
 	// we already read the first 3 lines (n,m,k)
 	uint64_t line = 3;
 	for (uint64_t i = 0; i < n; i++)
 	{
 		line++;
 
-		if (!is.good())
+		if (feof(fp))
 		{
 			printf("Unexpected end of file, line: %" PRIu64 "\n", line);
-			return;
+			throw runtime_error("Format error in input file.");
 		}
 
-		is >> taxon;
+		fgets(taxon, m + 4, fp);
+		len = strlen(taxon);
 
 		// ignore empty lines
-		if (taxon.length() == 0)
+		if (taxon[0] == '\n' || taxon[0] == '\r')
 		{
 			i--;
 			continue;
@@ -608,13 +643,13 @@ void PhylogeneticLoader::read (istream& is)
 			continue;
 		}
 		// exit if we encounter a faulty line
-		else if (taxon.length() != m)
+		else if (len < m)
 		{
-			printf("Unexpected length of taxon, length: %zu, line: %" PRIu64"\n", taxon.length(), line);
-			return;
+			printf("Unexpected length of taxon, length: %zu, line: %" PRIu64"\n", len, line);
+			throw runtime_error("Format error in input file.");
 		}
 
-		node_type v(new Taxon(taxon));
+		node_type v(new Taxon(taxon, m));
 		//bool inserted;
 		//decltype(nodes)::iterator it;
 		//tie(it, inserted) = nodes.insert(v);

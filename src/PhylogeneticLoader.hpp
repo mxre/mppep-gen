@@ -9,6 +9,7 @@
 #ifndef PHYLOGENETICLOADER_HPP_
 #define PHYLOGENETICLOADER_HPP_
 
+#include <cstdio>
 #include <deque>
 #include <vector>
 #include <istream>
@@ -28,6 +29,8 @@
 #define PROGRAM_NAME "Phylogeny Converter"
 #define PROGRAM_VERSION "1.0"
 
+#define AUTHOR "Max Resch"
+
 class PhylogeneticLoader
 {
 public:
@@ -35,7 +38,7 @@ public:
 	virtual ~PhylogeneticLoader ();
 
 	/// Parse and generate Function
-	void parse (std::istream&);
+	void parse (const std::string&);
 	/// Write output file
 	void write (const std::string&);
 
@@ -86,9 +89,9 @@ private:
 	std::vector<boost::dynamic_bitset<>> partitions1;
 
 	/// read the input file
-	void read (std::istream&);
+	void read (FILE* __restrict);
 	/// write output steiner tree in stp format
-	void write (std::ostream&, const std::string&);
+	void write (FILE* __restrict, const std::string&);
 	/// write mapping information (to reconstruct original Phylogeny)
 	void writemap (std::ostream&);
 

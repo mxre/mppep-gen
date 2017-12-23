@@ -11,6 +11,7 @@
 
 #include <string>
 #include <cstddef>
+#include <cstdint>
 #include <ostream>
 #include <memory>
 
@@ -19,7 +20,7 @@ class Taxon
 public:
 	Taxon (const Taxon&);
 	Taxon (const std::size_t);
-	Taxon (const std::string&);
+	Taxon (const char * __restrict, const std::size_t);
 	virtual ~Taxon ();
 
 	bool& operator[] (std::size_t pos) noexcept;
@@ -46,7 +47,7 @@ public:
 
 	bool Terminal;
 
-	int Index;
+	uint64_t Index;
 
 private:
 	bool* internal;

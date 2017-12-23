@@ -155,8 +155,8 @@ Taxon::Taxon (const size_t n) :
 		internal[i] = false;
 }
 
-Taxon::Taxon (const string& bitstring) :
-			Taxon(bitstring.length())
+Taxon::Taxon (const char * __restrict bitstring, const size_t __len) :
+			Taxon(__len)
 {
 	for (size_t j = 0; j < size; j++)
 	{
