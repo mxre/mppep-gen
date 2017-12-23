@@ -3,16 +3,17 @@
 
 BUILD_DIR = build
 
-OBJS =\
-	$(BUILD_DIR)/PhylogeneticLoader.obj\
-	$(BUILD_DIR)/Taxon.obj\
-	$(BUILD_DIR)/ThreadPool.obj\
-	$(BUILD_DIR)/Timer.obj\
-	$(BUILD_DIR)/CPUTime.obj
+#OBJS =\
+#	$(BUILD_DIR)/PhylogeneticLoader.obj\
+#	$(BUILD_DIR)/Taxon.obj\
+#	$(BUILD_DIR)/ThreadPool.obj\
+#	$(BUILD_DIR)/Timer.obj\
+#	$(BUILD_DIR)/CPUTime.obj
+OBJS = $(BUILD_DIR)/unified.obj
 
 PROGRAM  = phylogeny.exe
 
-INCLUDES = -Isrc/
+#INCLUDES = -Isrc/
 CXX      = clang
 DEFINES  = -D_MT -D_DLL -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS -D_WIN32_WINNT=0x0601
 
